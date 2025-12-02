@@ -20,7 +20,8 @@ async def _put_image() -> Attachment:
         base_url=DIAL_URL,
     ) as bucketClient:
         with open(image_path, 'rb') as image_file:
-            image_bytes = image_file.read_bytes()
+            # file object doesn't have read_bytes(); use read() to get bytes
+            image_bytes = image_file.read()
 
         image_content = BytesIO(image_bytes)
 
@@ -37,21 +38,26 @@ async def _put_image() -> Attachment:
 
 
 def start() -> None:
-    # TODO:
-    #  1. Create DialModelClient
-    #  2. Upload image (use `_put_image` method )
-    #  3. Print attachment to see result
-    #  4. Call chat completion via client with list containing one Message:
-    #    - role: Role.USER
-    #    - content: "What do you see on this picture?"
-    #    - custom_content: CustomContent(attachments=[attachment])
-    #  ---------------------------------------------------------------------------------------------------------------
-    #  Note: This approach uploads the image to DIAL bucket and references it via attachment. The key benefit of this
-    #        approach that we can use Models from different vendors (OpenAI, Google, Anthropic). The DIAL Core
-    #        adapts this attachment to Message content in appropriate format for Model.
-    #  TRY THIS APPROACH WITH DIFFERENT MODELS!
-    #  Optional: Try upload 2+ pictures for analysis
-    raise NotImplementedError
+    dalle_client = DialModelClient(
+        endpoint=DIAL_CHAT_COMPLETIONS_ENDPOINT,
+        deployment_name='anthropic.claude-v3-haiku',
+        api_key=API_KEY,
+    )
+
+    attachment = asyncio.run(_put_image())
+    print(attachment)
+
+    dalle_client.get_completion(
+        [
+            Message(
+                role=Role.USER,
+                content="What do you see on this picture?",
+                custom_content=CustomContent(
+                    attachments=[attachment]
+                )
+            )
+        ]
+    )
 
 
 start()
