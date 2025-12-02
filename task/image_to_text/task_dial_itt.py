@@ -15,12 +15,25 @@ async def _put_image() -> Attachment:
     image_path = Path(__file__).parent.parent.parent / file_name
     mime_type_png = 'image/png'
     # TODO:
-    #  1. Create DialBucketClient
-    #  2. Open image file
-    #  3. Use BytesIO to load bytes of image
-    #  4. Upload file with client
-    #  5. Return Attachment object with title (file name), url and type (mime type)
-    raise NotImplementedError
+    async with DialBucketClient(
+        api_key=API_KEY,
+        base_url=DIAL_URL,
+    ) as bucketClient:
+        with open(image_path, 'rb') as image_file:
+            image_bytes = image_file.read_bytes()
+
+        image_content = BytesIO(image_bytes)
+
+        attachment = await bucketClient.put_file(
+            name=file_name,
+            mime_type=mime_type_png,
+            content=image_content,
+        )
+        return Attachment(
+            title=file_name,
+            url=attachment.get("url"),
+            type=mime_type_png
+        )
 
 
 def start() -> None:
